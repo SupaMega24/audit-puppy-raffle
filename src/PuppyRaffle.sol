@@ -91,6 +91,7 @@ contract PuppyRaffle is ERC721, Ownable {
             "PuppyRaffle: Must send enough to enter raffle"
         );
         for (uint256 i = 0; i < newPlayers.length; i++) {
+            // my qs: What resets the players array?
             players.push(newPlayers[i]);
         }
 
@@ -111,6 +112,7 @@ contract PuppyRaffle is ERC721, Ownable {
     /// @param playerIndex the index of the player to refund. You can find it externally by calling `getActivePlayerIndex`
     /// @dev This function will allow there to be blank spots in the array
     function refund(uint256 playerIndex) public {
+        // @audit MEV - front-running
         address playerAddress = players[playerIndex];
         require(
             playerAddress == msg.sender,
@@ -138,6 +140,8 @@ contract PuppyRaffle is ERC721, Ownable {
                 return i;
             }
         }
+        // my qs: What if player is at index 0?
+        // @audit if player is at 0, it will return 0 and player might think they are not active!
         return 0;
     }
 
