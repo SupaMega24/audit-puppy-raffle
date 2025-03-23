@@ -210,6 +210,10 @@ contract PuppyRaffleTest is Test {
         assertEq(address(feeAddress).balance, expectedPrizeAmount);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                    PROOF OF CODE - DENIAL OF SERVICE
+    //////////////////////////////////////////////////////////////*/
+
     function test_denialOfService() public {
         // address[] memory players = new address[](1);
         // players[0] = playerOne;
