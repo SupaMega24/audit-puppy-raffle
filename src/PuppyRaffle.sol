@@ -123,6 +123,7 @@ contract PuppyRaffle is ERC721, Ownable {
             "PuppyRaffle: Player already refunded, or is not active"
         );
 
+        // @audit Reentrancy
         payable(msg.sender).sendValue(entranceFee);
 
         players[playerIndex] = address(0);
