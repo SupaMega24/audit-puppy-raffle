@@ -158,15 +158,25 @@ contract PuppyRaffle is ERC721, Ownable {
             "PuppyRaffle: Raffle not over"
         );
         require(players.length >= 4, "PuppyRaffle: Need at least 4 players");
+
+        // @audit Weak Randomness
+        // Fix with Chainlink VRF
         uint256 winnerIndex = uint256(
             keccak256(
                 abi.encodePacked(msg.sender, block.timestamp, block.difficulty)
             )
         ) % players.length;
         address winner = players[winnerIndex];
+
+        // my qs: Why not just use address(this).balance?
         uint256 totalAmountCollected = players.length * entranceFee;
+
+        // my qs: Is this correct. 80%? is it in the docs?
         uint256 prizePool = (totalAmountCollected * 80) / 100;
         uint256 fee = (totalAmountCollected * 20) / 100;
+
+        // total fees owner should be able to collect
+        // @audit: Overflow
         totalFees = totalFees + uint64(fee);
 
         uint256 tokenId = totalSupply();
